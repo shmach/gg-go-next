@@ -5,7 +5,6 @@ import type { GetGamesListUseCase } from "../useCases/GetGamesListUseCase";
 
 interface IGetGamesListControllerRequest {
   apiQuery: string;
-  url: string;
 }
 
 export class GetGamesListController
@@ -26,11 +25,10 @@ export class GetGamesListController
         };
       }
 
-      const { apiQuery, url } = body;
+      const { apiQuery } = body;
 
       const response = await this.getGamesListUseCase.execute({
         apiQuery,
-        url,
       });
 
       return {

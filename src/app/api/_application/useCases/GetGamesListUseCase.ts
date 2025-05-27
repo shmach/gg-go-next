@@ -3,7 +3,6 @@ import type { IUseCase } from "../@types/IUseCase";
 
 interface IGetGamesListUseCaseParams {
   apiQuery: string;
-  url: string;
 }
 
 interface IGetGamesListUseCaseResponse {
@@ -17,18 +16,22 @@ export class GetGamesListUseCase
   async execute(
     params: IGetGamesListUseCaseParams | undefined,
   ): Promise<IGetGamesListUseCaseResponse> {
-    if (!params || !params.apiQuery || !params.url) {
+    if (!params || !params.apiQuery) {
       throw new Error("Invalid parameters provided to GetGamesListUseCase");
     }
 
-    const { apiQuery, url } = params;
+    const { apiQuery } = params;
 
-    const response = await axios.post(url, apiQuery, {
-      headers: {
-        "Client-ID": process.env.TWITCH_CLIENT_ID,
-        Authorization: `Bearer ${process.env.TWITCH_ACCESS_TOKEN}`,
+    const response = await axios.post(
+      "https://api.igdb.com/v4/games",
+      apiQuery,
+      {
+        headers: {
+          "Client-ID": process.env.TWITCH_CLIENT_ID,
+          Authorization: `Bearer ${process.env.TWITCH_ACCESS_TOKEN}`,
+        },
       },
-    });
+    );
 
     return { games: response.data };
   }

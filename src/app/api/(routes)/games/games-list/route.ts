@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { apiQuery, url } = (await body) as IGamesListDTO;
+  const { apiQuery } = (await body) as IGamesListDTO;
 
   const response = await makeGetGamesListController().handler({
-    body: { apiQuery, url },
+    body: { apiQuery },
   });
 
   return NextResponse.json(
