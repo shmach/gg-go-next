@@ -2,6 +2,7 @@
 
 import type { IGame } from "@/@types/IGame";
 import { cn } from "@/lib/utils";
+import { useControlAnimationStore } from "@/store/useControlAnimationStore";
 import { getFullCover } from "@/utils/getFullCover";
 import { ImageOffIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -19,6 +20,7 @@ import {
 export function GamesListScrollAnimation({ games }: { games: IGame[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLUListElement>(null);
+  const { pauseAnimation } = useControlAnimationStore();
 
   useEffect(() => {
     addAnimation();
@@ -66,6 +68,7 @@ export function GamesListScrollAnimation({ games }: { games: IGame[] }) {
         className={cn(
           "flex w-max min-w-full h-fit shrink-0 flex-nowrap gap-4 py-4 hover:[animation-play-state:paused]",
           start && "animate-scroll",
+          pauseAnimation && "[animation-play-state:paused]",
         )}
       >
         {games.map((game) => (

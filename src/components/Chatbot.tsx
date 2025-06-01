@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useControlAnimationStore } from "@/store/useControlAnimationStore";
 import { Bot, CircleX, Loader2, SendHorizonal, User2Icon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useOptimistic, useState, useTransition } from "react";
@@ -10,6 +11,7 @@ import { Input } from "./Input";
 
 export function Chatbot() {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { pauseAnimation, setPauseAnimation } = useControlAnimationStore();
 
   const transition = {
     duration: 0.35,
@@ -72,7 +74,10 @@ export function Chatbot() {
                     className="text-primary p-0 has-[>svg]:px-0 gap-0 cursor-pointer bg-transparent hover:text-white transition-all"
                     type="button"
                     size="icon"
-                    onClick={() => setIsChatOpen(false)}
+                    onClick={() => {
+                      setIsChatOpen(false);
+                      setPauseAnimation(false);
+                    }}
                   >
                     <CircleX style={{ scale: 1.5 }} />
                   </Button>
@@ -99,7 +104,10 @@ export function Chatbot() {
           bounce: 0.2,
           backgroundColor: { visualDuration: 0.3, y: 0 },
         }}
-        onClick={() => setIsChatOpen(!isChatOpen)}
+        onClick={() => {
+          setIsChatOpen(!isChatOpen);
+          setPauseAnimation(!pauseAnimation);
+        }}
       >
         <Bot className="text-white" style={{ zIndex: 5 }} size={35} />
       </motion.button>

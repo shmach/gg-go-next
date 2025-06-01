@@ -16,7 +16,7 @@ export default async function Home() {
       .then((res) => res.data.games),
     await axios
       .post<{ games: IGame[] }>("http://localhost:3000/api/games/games-list", {
-        apiQuery: `fields name, cover.url, first_release_date, release_dates.human; where category = 0 & first_release_date >= ${getActualEpochTime()}; sort first_release_date desc; limit 15;`,
+        apiQuery: `fields name, cover.url, first_release_date, release_dates.human; where category = 0 & first_release_date >= ${getActualEpochTime()}; sort first_release_date asc; limit 15;`,
       })
       .then((res) => res.data.games),
   ]);
