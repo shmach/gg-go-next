@@ -60,8 +60,9 @@ export function Chatbot() {
                 originY: 2,
                 height: "100vh",
                 width: "100vw",
+                zIndex: 3,
               }}
-              className="fixed top-0 left-0 bg-secondary opacity-90 flex items-center justify-center z-10"
+              className="fixed top-0 left-0 bg-secondary opacity-90 flex items-center justify-center"
             >
               <section className="min-w-full lg:min-w-[50%] min-h-[90%] px-5 py-6 flex flex-col items-center">
                 <div className="w-full flex items-center justify-between mb-4">
@@ -84,8 +85,9 @@ export function Chatbot() {
         </AnimatePresence>
       }
       <motion.button
-        className="z-20 hover:cursor-pointer rounded-full place-items-center p-1"
+        className="hover:cursor-pointer rounded-full place-items-center p-1"
         type="button"
+        style={{ zIndex: 4 }}
         initial={{ scale: 1 }}
         whileHover={{
           scale: 1.1,
@@ -99,7 +101,7 @@ export function Chatbot() {
         }}
         onClick={() => setIsChatOpen(!isChatOpen)}
       >
-        <Bot className="text-white z-30" size={35} />
+        <Bot className="text-white" style={{ zIndex: 5 }} size={35} />
       </motion.button>
     </>
   );
