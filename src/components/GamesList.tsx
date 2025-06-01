@@ -7,11 +7,12 @@ import { getFullCover } from "@/utils/getFullCover";
 import { ImageOffIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./Button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -158,11 +159,63 @@ function GameCard({ game }: { game: IGame }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Are you absolutely sure?</DialogTitle>
-          <DialogDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
-          </DialogDescription>
+          <DialogTitle className="mb-2">Game Details</DialogTitle>
+          <div className="flex">
+            <div className="w-2/4 h-full flex justify-center items-center">
+              <Image
+                alt={game.name}
+                src={getGameCover(game.cover?.url || "")}
+                width={160}
+                height={200}
+                className="h-[200px] w-[160px] object-cover"
+              />
+            </div>
+            <div className="w-2/4 h-fit flex flex-col">
+              <h3 className="text-lg font-medium">{game.name}</h3>
+              <span className="text-sm text-muted-foreground">
+                {game.first_release_date === 0
+                  ? "TBA"
+                  : new Date(game.first_release_date * 1000).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      },
+                    ) || game.first_release_date}
+              </span>
+              {game.platforms && game.platforms.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {game.platforms
+                    .map(
+                      (platform: Record<string, string>) =>
+                        platform.abbreviation,
+                    )
+                    .join(", ")}
+                </span>
+              )}
+              {game.summary && (
+                <p className="text-sm mt-2">
+                  {/* {game.summary.length > 200
+                      ? `${game.summary.slice(0, 200)}...`
+                      : game.summary} */}
+                  {game.summary}
+                </p>
+              )}
+              {game.url && (
+                <Button variant="link" className="mt-2">
+                  <Link
+                    href={game.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    View on IGDB
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogHeader>
       </DialogContent>
     </Dialog>

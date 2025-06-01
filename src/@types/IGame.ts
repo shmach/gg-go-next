@@ -1,4 +1,5 @@
 export interface IGame {
+  id: number;
   name: string;
   cover?: { id: number; url: string };
   first_release_date: number;
@@ -6,5 +7,8 @@ export interface IGame {
     id: number;
     human: string;
   }[];
-  id: number;
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  platforms: Record<string, any>;
+  summary?: string;
+  url?: string;
 }
