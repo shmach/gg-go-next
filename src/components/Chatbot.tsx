@@ -1,9 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { ChatbotServices } from "@/services/chatbotServices";
 import { useControlAnimationStore } from "@/store/useControlAnimationStore";
 import { Bot, CircleX, Loader2, SendHorizonal, User2Icon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, type Transition, motion } from "motion/react";
 import { useOptimistic, useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./Avatar";
 import { Button } from "./Button";
@@ -13,9 +14,10 @@ export function Chatbot() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { pauseAnimation, setPauseAnimation } = useControlAnimationStore();
 
-  const transition = {
+  const transition: Transition = {
     duration: 0.35,
     ease: [0.59, 0, 0.35, 1],
+    y: { type: "spring", visualDuration: 0.7, bounce: 0.2 },
   };
 
   const enteringState = {
@@ -27,10 +29,7 @@ export function Chatbot() {
     scaleX: 1,
     borderRadius: 0,
     y: 0,
-    transition: {
-      ...transition,
-      y: { type: "spring", visualDuration: 0.7, bounce: 0.2 },
-    },
+    transition: transition,
   };
 
   const exitingState = {
@@ -64,9 +63,9 @@ export function Chatbot() {
                 width: "100vw",
                 zIndex: 3,
               }}
-              className="fixed top-0 left-0 bg-secondary opacity-90 flex items-center justify-center"
+              className="fixed top-0 left-0 bg-secondary/90 flex items-center justify-center"
             >
-              <section className="min-w-full lg:min-w-[50%] min-h-[90%] px-5 py-6 flex flex-col items-center">
+              <section className="w-full lg:w-[50%] min-h-[90%] px-5 py-6 flex flex-col items-center">
                 <div className="w-full flex items-center justify-between mb-4">
                   <h2>(Conversation Title)</h2>
                   <Button
@@ -102,7 +101,7 @@ export function Chatbot() {
           duration: 0.2,
           type: "spring",
           bounce: 0.2,
-          backgroundColor: { visualDuration: 0.3, y: 0 },
+          backgroundColor: { visualDuration: 0.3 },
         }}
         onClick={() => {
           setIsChatOpen(!isChatOpen);
@@ -124,32 +123,7 @@ type IChatMessage = {
 };
 
 function ChatbotConversation() {
-  const mockConversation = [
-    {
-      message: {
-        owner: "bot",
-        text: "Looking for a new game to play? I can help you with that!",
-        isPending: false,
-      },
-    },
-    {
-      message: {
-        owner: "user",
-        text: "I want to play a new game, but I don't know which one to choose. I like action and adventure games.",
-        isPending: false,
-      },
-    },
-    {
-      message: {
-        owner: "bot",
-        text: "Sure! I can help you find a game that fits your preferences. Do you have any specific platforms in mind, like PC, console, or mobile?",
-        isPending: false,
-      },
-    },
-  ];
-
-  const [chatMessages, setChatMessages] =
-    useState<IChatMessage[]>(mockConversation);
+  const [chatMessages, setChatMessages] = useState<IChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
 
@@ -162,76 +136,96 @@ function ChatbotConversation() {
 
   const [isPending, startTransition] = useTransition();
 
-  const handleOptimisticChat = (newMessage: IChatMessage) => {
-    startTransition(() => {
-      addOptimisticChat(newMessage);
-      setChatMessages((prev) => [...prev, newMessage]);
-      setUserPrompt("");
-    });
-  };
-
   const submitAction = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    console.log("Submitting chat message...");
-    console.log(userPrompt);
-    const newMessage: IChatMessage = {
-      message: {
-        owner: "user",
-        text: userPrompt,
-        isPending: false,
-      },
-    };
-    handleOptimisticChat(newMessage);
-    setIsLoading(false);
+    try {
+      e.preventDefault();
+      setIsLoading(true);
+      startTransition(async () => {
+        const userMessage: IChatMessage = {
+          message: {
+            owner: "user",
+            text: userPrompt,
+            isPending: false,
+          },
+        };
+
+        let botMessage: IChatMessage = {
+          message: {
+            owner: "bot",
+            text: "Thinking...",
+            isPending: true,
+          },
+        };
+
+        addOptimisticChat(userMessage);
+        addOptimisticChat(botMessage);
+
+        const response = await ChatbotServices.sendChatbotMessage(userPrompt);
+
+        botMessage = {
+          message: {
+            owner: "bot",
+            text: response.result.response,
+            isPending: false,
+          },
+        };
+
+        setChatMessages((prev) => [...prev, userMessage, botMessage]);
+
+        console.log("Chat message sent successfully:", response);
+
+        setIsLoading(false);
+        setUserPrompt("");
+      });
+    } catch (error) {
+      alert("An error occurred while sending the message.");
+      console.error("Error sending message:", error);
+    }
   };
 
   return (
     <>
-      {isLoading ? (
-        <div className="w-full min-h-full flex flex-1 justify-center items-center">
-          <Loader2 />
+      <form
+        onSubmit={submitAction}
+        className="w-full flex flex-col justify-between items-center"
+      >
+        <div className="w-full flex flex-col rounded-lg h-[500px] md:h-[420px] lg:h-[470px] xl:min-h-[600px] xl:max-h-[700px] overflow-y-auto mt-8">
+          <ul className="w-full pr-3 text-base flex flex-col gap-4">
+            {optimisticChat.length > 0 &&
+              optimisticChat.map((chatMessage, index) => (
+                <li
+                  key={Math.random().toString(36).substring(2, 15)}
+                  className="w-full flex text-justify justify-start items-start gap-4"
+                >
+                  <ChatbotMessage message={chatMessage} />
+                </li>
+              ))}
+          </ul>
         </div>
-      ) : (
-        <form
-          onSubmit={submitAction}
-          className="w-full flex flex-col justify-between items-center"
-        >
-          <div className="w-full flex flex-col rounded-lg h-[500px] md:h-[420px] lg:h-[470px] xl:min-h-[600px] xl:max-h-[700px] overflow-y-auto mt-8">
-            <ul className="w-full pr-3 text-base flex flex-col gap-4">
-              {optimisticChat.length > 0 &&
-                optimisticChat.map((chatMessage, index) => (
-                  <li
-                    key={Math.random().toString(36).substring(2, 15)}
-                    className="w-full flex text-justify justify-start items-start gap-4"
-                  >
-                    <ChatbotMessage message={chatMessage} />
-                  </li>
-                ))}
-            </ul>
+        <div className="w-full flex justify-between items-center mt-4 h-16 border border-gray-300 text-base rounded-lg shadow-sm p-3 gap-2">
+          <Input
+            className="flex-1 h-full border-none bg-transparent dark:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+            type="text"
+            placeholder="Type your message here..."
+            value={userPrompt}
+            onChange={(e) => setUserPrompt(e.target.value)}
+            required
+          />
+          <div className="flex gap-2 justify-center items-center">
+            <Button type="submit" size="icon" className="cursor-pointer">
+              <SendHorizonal />
+            </Button>
           </div>
-          <div className="w-full flex justify-between items-center mt-4 h-16 border border-gray-300 text-base rounded-lg shadow-sm p-3 gap-2">
-            <Input
-              className="flex-1 h-full border-none bg-transparent dark:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-              type="text"
-              placeholder="Type your message here..."
-              value={userPrompt}
-              onChange={(e) => setUserPrompt(e.target.value)}
-              required
-            />
-            <div className="flex gap-2 justify-center items-center">
-              <Button type="submit" size="icon" className="cursor-pointer">
-                <SendHorizonal />
-              </Button>
-            </div>
-          </div>
-        </form>
-      )}
+        </div>
+      </form>
     </>
   );
 }
 
-function ChatbotMessage({ message }: { message: IChatMessage }) {
+function ChatbotMessage({
+  message,
+  sending,
+}: { message: IChatMessage; sending?: boolean }) {
   return (
     <div
       className={cn(
@@ -245,12 +239,12 @@ function ChatbotMessage({ message }: { message: IChatMessage }) {
       <span
         className={cn(
           message.message.owner === "user"
-            ? "rounded-ss-lg bg-background"
-            : "rounded-se-lg bg-primary",
+            ? "rounded-ss-lg bg-background/70"
+            : "rounded-se-lg bg-primary font-bold",
           "mt-[13px] w-[50%] p-2 rounded-b-lg",
         )}
       >
-        {message.message.text}
+        {!sending ? message.message.text : <Loader2 className="animate-spin" />}
       </span>
     </div>
   );
@@ -259,7 +253,7 @@ function ChatbotMessage({ message }: { message: IChatMessage }) {
 function ChatbotMessageAvatar({ owner, src }: { owner: string; src?: string }) {
   return owner === "user" ? (
     <Avatar>
-      <AvatarImage src={src} alt="Sua foto de perfil" />
+      <AvatarImage src={src} alt="Your profile picture" />
       <AvatarFallback className="bg-primary text-secondary">
         <User2Icon />
       </AvatarFallback>
