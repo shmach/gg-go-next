@@ -9,6 +9,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./Avatar";
 import { Button } from "./Button";
 import { Input } from "./Input";
+import { MarkdownText } from "./MarkdownText";
 
 export function Chatbot() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -115,17 +116,15 @@ export function Chatbot() {
 }
 
 type IChatMessage = {
-  message: {
-    owner: string;
-    text: string;
-    isPending?: boolean;
-  };
+  owner: string;
+  text: string;
+  isPending?: boolean;
+  triggerAnimation?: boolean;
 };
 
 function ChatbotConversation() {
   const [chatMessages, setChatMessages] = useState<IChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [userPrompt, setUserPrompt] = useState("");
+  // const [userPrompt, setUserPrompt] = useState("");
 
   const [optimisticChat, addOptimisticChat] = useOptimistic(
     chatMessages,
@@ -136,46 +135,42 @@ function ChatbotConversation() {
 
   const [isPending, startTransition] = useTransition();
 
-  const submitAction = async (e: React.FormEvent<HTMLFormElement>) => {
+  const submitAction = async (formData: FormData) => {
     try {
-      e.preventDefault();
-      setIsLoading(true);
       startTransition(async () => {
         const userMessage: IChatMessage = {
-          message: {
-            owner: "user",
-            text: userPrompt,
-            isPending: false,
-          },
+          owner: "user",
+          text: formData.get("userPrompt") as string,
+          isPending: false,
+          triggerAnimation: true,
         };
 
         let botMessage: IChatMessage = {
-          message: {
-            owner: "bot",
-            text: "Thinking...",
-            isPending: true,
-          },
+          owner: "bot",
+          text: "Thinking...",
+          isPending: true,
+          triggerAnimation: true,
         };
 
         addOptimisticChat(userMessage);
         addOptimisticChat(botMessage);
 
-        const response = await ChatbotServices.sendChatbotMessage(userPrompt);
+        const response = await ChatbotServices.sendChatbotMessage(
+          formData.get("userPrompt") as string,
+        );
 
         botMessage = {
-          message: {
-            owner: "bot",
-            text: response.result.response,
-            isPending: false,
-          },
+          owner: "bot",
+          text: response.result.response,
+          isPending: false,
         };
 
-        setChatMessages((prev) => [...prev, userMessage, botMessage]);
-
-        console.log("Chat message sent successfully:", response);
-
-        setIsLoading(false);
-        setUserPrompt("");
+        setChatMessages((prev) => [
+          ...prev,
+          { ...userMessage, triggerAnimation: false },
+          { ...botMessage, triggerAnimation: false },
+        ]);
+        formData.set("userPrompt", "");
       });
     } catch (error) {
       alert("An error occurred while sending the message.");
@@ -186,13 +181,13 @@ function ChatbotConversation() {
   return (
     <>
       <form
-        onSubmit={submitAction}
+        action={submitAction}
         className="w-full flex flex-col justify-between items-center"
       >
         <div className="w-full flex flex-col rounded-lg h-[500px] md:h-[420px] lg:h-[470px] xl:min-h-[600px] xl:max-h-[700px] overflow-y-auto mt-8">
           <ul className="w-full pr-3 text-base flex flex-col gap-4">
             {optimisticChat.length > 0 &&
-              optimisticChat.map((chatMessage, index) => (
+              optimisticChat.map((chatMessage, _index) => (
                 <li
                   key={Math.random().toString(36).substring(2, 15)}
                   className="w-full flex text-justify justify-start items-start gap-4"
@@ -204,15 +199,19 @@ function ChatbotConversation() {
         </div>
         <div className="w-full flex justify-between items-center mt-4 h-16 border border-gray-300 text-base rounded-lg shadow-sm p-3 gap-2">
           <Input
+            name="userPrompt"
             className="flex-1 h-full border-none bg-transparent dark:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
             type="text"
             placeholder="Type your message here..."
-            value={userPrompt}
-            onChange={(e) => setUserPrompt(e.target.value)}
             required
           />
           <div className="flex gap-2 justify-center items-center">
-            <Button type="submit" size="icon" className="cursor-pointer">
+            <Button
+              type="submit"
+              size="icon"
+              className="cursor-pointer"
+              disabled={isPending}
+            >
               <SendHorizonal />
             </Button>
           </div>
@@ -222,31 +221,34 @@ function ChatbotConversation() {
   );
 }
 
-function ChatbotMessage({
-  message,
-  sending,
-}: { message: IChatMessage; sending?: boolean }) {
+function ChatbotMessage({ message }: { message: IChatMessage }) {
   return (
-    <div
+    <motion.div
+      initial={message.triggerAnimation && { opacity: 0, y: 20 }}
+      animate={message.triggerAnimation && { opacity: 1, y: 0 }}
       className={cn(
-        message.message.owner === "user" ? "flex flex-row-reverse" : "flex",
+        message.owner === "user" ? "flex flex-row-reverse" : "flex",
         "w-full gap-2",
       )}
     >
       <span>
-        <ChatbotMessageAvatar owner={message.message.owner} />
+        <ChatbotMessageAvatar owner={message.owner} />
       </span>
       <span
         className={cn(
-          message.message.owner === "user"
+          message.owner === "user"
             ? "rounded-ss-lg bg-background/70"
-            : "rounded-se-lg bg-primary font-bold",
-          "mt-[13px] w-[50%] p-2 rounded-b-lg",
+            : "rounded-se-lg bg-slate-900 text-primary",
+          "mt-[13px] py-2 px-3 rounded-b-lg",
         )}
       >
-        {!sending ? message.message.text : <Loader2 className="animate-spin" />}
+        {!message.isPending ? (
+          <MarkdownText markdown={message.text} />
+        ) : (
+          <Loader2 className="animate-spin" />
+        )}
       </span>
-    </div>
+    </motion.div>
   );
 }
 
