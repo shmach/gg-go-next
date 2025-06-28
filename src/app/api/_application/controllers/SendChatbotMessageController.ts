@@ -1,9 +1,11 @@
+import type { Content } from "@google/genai";
 import type { IController } from "../@types/IController";
 import type { IHttpRequest, IHttpResponse } from "../@types/IHttp";
 import type { SendChatbotMessageUseCase } from "../useCases/SendChatbotMessageUseCase";
 
 interface ISendChatbotMessageControllerRequest {
   prompt: string;
+  chatHistory: Content[];
 }
 
 export class SendChatbotMessageController
@@ -23,10 +25,11 @@ export class SendChatbotMessageController
         };
       }
 
-      const { prompt } = request.body;
+      const { prompt, chatHistory } = request.body;
 
       const { response } = await this.sendChatbotMessageUseCase.execute({
         prompt,
+        chatHistory,
       });
 
       return {

@@ -14,7 +14,6 @@ export default async function Home() {
         apiQuery: `fields name, cover.url, first_release_date, release_dates.human, platforms.abbreviation, summary, url; where category = 0 & first_release_date <= ${getActualEpochTime()}; sort first_release_date desc; limit 20;`,
       })
       .then((res) => {
-        console.log("Released games fetched successfully");
         return res.data.games;
       }),
     await axios
@@ -22,7 +21,6 @@ export default async function Home() {
         apiQuery: `fields name, cover.url, first_release_date, release_dates.human, platforms.abbreviation, summary, url; where category = 0 & first_release_date >= ${getActualEpochTime()}; sort first_release_date asc; limit 20;`,
       })
       .then((res) => {
-        console.log("Upcoming games fetched successfully");
         return res.data.games;
       }),
   ]);

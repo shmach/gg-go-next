@@ -1,8 +1,10 @@
 import { makeSendChatbotMessageController } from "@/app/api/_application/factories/makeSendChatbotMessageController";
+import type { Content } from "@google/genai";
 import { type NextRequest, NextResponse } from "next/server";
 
 interface ISendChatbotMessageDTO {
   prompt: string;
+  chatHistory: Content[];
 }
 
 export async function POST(request: NextRequest) {
@@ -15,10 +17,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { prompt } = body as ISendChatbotMessageDTO;
+  const { prompt, chatHistory } = body as ISendChatbotMessageDTO;
 
   const response = await makeSendChatbotMessageController().handler({
-    body: { prompt },
+    body: { prompt, chatHistory },
   });
 
   return NextResponse.json(

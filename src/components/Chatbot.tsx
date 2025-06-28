@@ -5,7 +5,13 @@ import { ChatbotServices } from "@/services/chatbotServices";
 import { useControlAnimationStore } from "@/store/useControlAnimationStore";
 import { Bot, CircleX, Loader2, SendHorizonal, User2Icon } from "lucide-react";
 import { AnimatePresence, type Transition, motion } from "motion/react";
-import { useOptimistic, useState, useTransition } from "react";
+import {
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./Avatar";
 import { Button } from "./Button";
 import { Input } from "./Input";
@@ -124,7 +130,6 @@ type IChatMessage = {
 
 function ChatbotConversation() {
   const [chatMessages, setChatMessages] = useState<IChatMessage[]>([]);
-  // const [userPrompt, setUserPrompt] = useState("");
 
   const [optimisticChat, addOptimisticChat] = useOptimistic(
     chatMessages,
@@ -132,6 +137,15 @@ function ChatbotConversation() {
       return prevMessages.concat(newMessage);
     },
   );
+
+  const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Let's useEffect to scroll to the end of messages
+  useEffect(() => {
+    if (endOfMessagesRef.current) {
+      endOfMessagesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [optimisticChat]);
 
   const [isPending, startTransition] = useTransition();
 
@@ -155,9 +169,15 @@ function ChatbotConversation() {
         addOptimisticChat(userMessage);
         addOptimisticChat(botMessage);
 
-        const response = await ChatbotServices.sendChatbotMessage(
-          formData.get("userPrompt") as string,
-        );
+        const formattedChat = optimisticChat.map((msg) => ({
+          role: msg.owner === "bot" ? "model" : msg.owner,
+          parts: [{ text: msg.text }],
+        }));
+
+        const response = await ChatbotServices.sendChatbotMessage({
+          prompt: formData.get("userPrompt") as string,
+          chatHistory: formattedChat,
+        });
 
         botMessage = {
           owner: "bot",
@@ -173,6 +193,7 @@ function ChatbotConversation() {
         formData.set("userPrompt", "");
       });
     } catch (error) {
+      // TODO: Handle error appropriately with Toast
       alert("An error occurred while sending the message.");
       console.error("Error sending message:", error);
     }
@@ -196,6 +217,8 @@ function ChatbotConversation() {
                 </li>
               ))}
           </ul>
+          <div ref={endOfMessagesRef} />{" "}
+          {/* This div is used to scroll to the bottom of the chat */}
         </div>
         <div className="w-full flex justify-between items-center mt-4 h-16 border border-gray-300 text-base rounded-lg shadow-sm p-3 gap-2">
           <Input
